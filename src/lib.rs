@@ -1,16 +1,9 @@
-use std::collections::HashMap;
 use tar;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct WasmTar {
-    yolo: u32,
     tar_buffer: Vec<u8>,
-}
-
-/// Private methods not exposed to JavaScript.
-impl WasmTar {
-    // unimplemented!();
 }
 
 /// Public methods, exported to JavaScript.
@@ -18,13 +11,13 @@ impl WasmTar {
 impl WasmTar {
     pub fn new() -> WasmTar {
         WasmTar {
-            yolo: 42,
             tar_buffer: Vec::new(),
         }
     }
 
-    pub fn allocate(&mut self, length: usize) {
-        self.tar_buffer = Vec::with_capacity(length);
+    pub fn allocate(&mut self, length: usize) -> usize {
+        self.tar_buffer = vec![0; length];
+        self.tar_buffer.len()
     }
 
     pub fn memory_pos(&self) -> *const u8 {
@@ -32,15 +25,25 @@ impl WasmTar {
     }
 
     pub fn list_entries(&self) -> String {
+        // Init archive from in memory tar buffer.
         let mut archive = tar::Archive::new(self.tar_buffer.as_slice());
-        // let mut entries = HashMap::new();
+
+        // Init a string containing all tar entries.
         let mut entries_string = Vec::new();
+        entries_string.push(format!("tar_buffer size: {}", self.tar_buffer.len()));
         entries_string.push("All entries:".to_string());
+
+        // Iterate over all entries of the archive.
+        let mut nb_entries = 0;
         for file in archive.entries().unwrap() {
+            nb_entries += 1;
             // Check for an I/O error.
             let file = file.unwrap();
             entries_string.push(file.header().path().unwrap().to_str().unwrap().to_owned());
         }
+
+        // Concatenate entries into one string.
+        entries_string.push(format!("nb_entries: {}", nb_entries));
         entries_string.join("\n")
     }
 }
